@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title> H&B Peek-A-Boos &copy;</title>
+
+<style>
+
+body{
+margin:0;
+background:#111;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+font-family:sans-serif;
+overflow:hidden;
+}
+
+/* ---------- Splash Intro ---------- */
+
+#intro{
+position:fixed;
+top:0;
+left:0;
+width:100vw;
+height:100vh;
+background:black;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:1000;
+transition:opacity 0.8s ease;
+}
+
+#intro img{
+width:800px;
+max-width:800vw;
+filter:drop-shadow(0 0 30px rgba(255,255,255,0.2));
+}
+
+/* ---------- App ---------- */
+
+#container{
+position:relative;
+width:800px;
+max-width:95vw;
+touch-action:none;
+opacity:0;
+/*transition:opacity 1s ease;*/
+}
+
+img{
+width:100%;
+display:block;
+}
+
+#selection{
+position:absolute;
+border:2px dashed white;
+cursor:move;
+box-sizing:border-box;
+touch-action:none;
+}
+
+#overlay{
+position:absolute;
+top:0;
+left:0;
+touch-action:none;
+}
+
+.handle{
+width:24px;
+height:24px;
+background:white;
+border-radius:50%;
+position:absolute;
+}
+
+.tl{top:-7px; left:-7px; cursor:nwse-resize;}
+.tr{top:-7px; right:-7px; cursor:nesw-resize;}
+.bl{bottom:-7px; left:-7px; cursor:nesw-resize;}
+.br{bottom:-7px; right:-7px; cursor:nwse-resize;}
+
+</style>
+</head>
+
+<body>
+
+<!-- Splash Intro -->
+
+<div id="intro">
+<img src="https://gold-junior-swordfish-840.mypinata.cloud/ipfs/bafybeiestiyy3emphrknumaovuszkjhwj26x3bfa7md5ncviarz7gqggra">
+</div>
+
+<div id="container">
+
+<img id="background">
+
+<canvas id="overlay"></canvas>
+
+<div id="selection" style="width:150px;height:150px;top:50px;left:50px;">
+<div class="handle tl"></div>
+<div class="handle tr"></div>
+<div class="handle bl"></div>
+<div class="handle br"></div>
+</div>
+
+</div>
+
+<script>
+
+/* -----------------------------
+IPFS CID CONFIG
+----------------------------- */
+
+const backgrounds=[
+
+"https://gold-junior-swordfish-840.mypinata.cloud/ipfs/bafybeihqaopgk76mp5rof52ror6n4wr3d5pufjqjgsy5pcnjc5dteoe5ba",
+
+"https://gold-junior-swordfish-840.mypinata.cloud/ipfs/bafybeid75ebly746m4nbkff2hsmraj6cjr6pqidzeijt6kmjqykzfrh4fi",
+
+"https://gold-junior-swordfish-840.mypinata.cloud/ipfs/bafybeicwu5kzcdy6qxiiecm32sbuuch3ryzpplhuidivblpz46pejfivzy"
+
+]
+
+const overlayCID="https://gold-junior-swordfish-840.mypinata.cloud/ipfs/bafybeiglwppttqdegeicny5yjolrkchqsay3msvhhlrpe6kfej7ybgxqry"
+
+
+/* -----------------------------
+Random Background Selection
+----------------------------- */
+
+const bg=document.getElementById("background")
+
+bg.src=backgrounds[Math.floor(Math.random()*backgrounds.length)]
+
+
+/* -----------------------------
+Canvas Setup
+----------------------------- */
+
+const overlayCanvas=document.getElementById("overlay")
+const ctx=overlayCanvas.getContext("2d")
+
+const overlayImg=new Image()
+
+overlayImg.src=overlayCID
+
+const selection=document.getElementById("selection")
+
+
+/* -----------------------------
+Preload + Intro Transition
+----------------------------- */
+
+let loaded=0
+
+function checkLoaded(){
+
+loaded++
+
+if(loaded>=2){
+
+setTimeout(()=>{
+
+document.getElementById("intro").style.opacity=0
+
+document.getElementById("container").style.opacity=1
+
+setTimeout(()=>{
+document.getElementById("intro").remove()
+},500)
+
+resizeCanvas()
+
+},800)
+
+}
+
+}
+
+overlayImg.onload=checkLoaded
+bg.onload=checkLoaded
+
+
+/* -----------------------------
+Canvas Draw
+----------------------------- */
+
+function resizeCanvas(){
+
+overlayCanvas.width=bg.clientWidth
+overlayCanvas.height=bg.clientHeight
+
+draw()
+
+}
+
+window.addEventListener("resize",resizeCanvas)
+
+function draw(){
+
+ctx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height)
+
+ctx.drawImage(overlayImg,0,0,overlayCanvas.width,overlayCanvas.height)
+
+const rect=selection.getBoundingClientRect()
+const parent=overlayCanvas.getBoundingClientRect()
+
+const x=rect.left-parent.left
+const y=rect.top-parent.top
+
+ctx.clearRect(x,y,selection.offsetWidth,selection.offsetHeight)
+
+}
+
+
+/* -----------------------------
+Dragging
+----------------------------- */
+
+let dragging=false
+let offsetX=0
+let offsetY=0
+
+selection.addEventListener("pointerdown",(e)=>{
+
+e.preventDefault()
+
+if(e.target.classList.contains("handle")) return
+
+dragging=true
+
+offsetX=e.offsetX||(e.clientX-selection.offsetLeft)
+offsetY=e.offsetY||(e.clientY-selection.offsetTop)
+
+})
+
+window.addEventListener("pointermove",(e)=>{
+
+if(!dragging) return
+
+e.preventDefault()
+
+const parent=overlayCanvas.getBoundingClientRect()
+
+const x=e.clientX-parent.left-offsetX
+const y=e.clientY-parent.top-offsetY
+
+selection.style.left=x+"px"
+selection.style.top=y+"px"
+
+draw()
+
+})
+
+window.addEventListener("pointerup",()=>dragging=false)
+
+
+/* -----------------------------
+Resize Handles
+----------------------------- */
+
+document.querySelectorAll(".handle").forEach(handle=>{
+
+handle.addEventListener("pointerdown",(e)=>{
+
+e.stopPropagation()
+
+const dir=handle.classList[1]
+
+const startX=e.clientX
+const startY=e.clientY
+
+const startWidth=selection.offsetWidth
+const startHeight=selection.offsetHeight
+const startLeft=selection.offsetLeft
+const startTop=selection.offsetTop
+
+function resize(ev){
+
+let dx=ev.clientX-startX
+let dy=ev.clientY-startY
+
+if(dir==="br"){
+selection.style.width=startWidth+dx+"px"
+selection.style.height=startHeight+dy+"px"
+}
+
+if(dir==="bl"){
+selection.style.width=startWidth-dx+"px"
+selection.style.left=startLeft+dx+"px"
+selection.style.height=startHeight+dy+"px"
+}
+
+if(dir==="tr"){
+selection.style.width=startWidth+dx+"px"
+selection.style.height=startHeight-dy+"px"
+selection.style.top=startTop+dy+"px"
+}
+
+if(dir==="tl"){
+selection.style.width=startWidth-dx+"px"
+selection.style.left=startLeft+dx+"px"
+selection.style.height=startHeight-dy+"px"
+selection.style.top=startTop+dy+"px"
+}
+
+draw()
+
+}
+
+function stop(){
+
+window.removeEventListener("pointermove",resize)
+window.removeEventListener("pointerup",stop)
+
+}
+
+window.addEventListener("pointermove",resize)
+window.addEventListener("pointerup",stop)
+
+})
+
+})
+
+</script>
+
+</body>
+</html>
